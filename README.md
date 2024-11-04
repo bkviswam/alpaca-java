@@ -1,409 +1,270 @@
-<p align="center"><a href="https://mainstringargs.github.io/alpaca-java/" target="_blank"><img src="https://i.imgur.com/mQcuK61.jpg"></a></p>
+<p align="center"><a href="https://petersoj.github.io/alpaca-java/" target="_blank"><img src="https://raw.githubusercontent.com/Petersoj/alpaca-java/master/.github/image/logo.png" alt="Logo"></a></p>
 <p align="center">
-<a href="https://search.maven.org/artifact/io.github.mainstringargs/alpaca-java" target="_blank"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.mainstringargs/alpaca-java"></a> <a href="https://javadoc.io/doc/io.github.mainstringargs/alpaca-java" target="_blank"><img src="https://javadoc.io/badge/io.github.mainstringargs/alpaca-java.svg" alt="Javadocs"></a> <a href="https://travis-ci.org/mainstringargs/alpaca-java" target="_blank"><img src="https://travis-ci.org/mainstringargs/alpaca-java.svg?branch=master" alt="Build Status"></a> <a href="https://codecov.io/gh/mainstringargs/alpaca-java" target="_blank"><img src="https://codecov.io/gh/mainstringargs/alpaca-java/branch/unittesting/graph/badge.svg" />
-</a> <a href="https://opensource.org/licenses/MIT" target="_blank"><img alt="GitHub" src="https://img.shields.io/github/license/mainstringargs/alpaca-java"></a>    
+    <a href="https://github.com/Petersoj/alpaca-java" target="_blank"><img alt="GitHub Repository" src="https://img.shields.io/badge/GitHub-000000?logo=github"></a>
+    <a href="https://search.maven.org/artifact/net.jacobpeterson.alpaca/alpaca-java" target="_blank"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/net.jacobpeterson.alpaca/alpaca-java"></a>
+    <a href="https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java" target="_blank"><img src="https://javadoc.io/badge/net.jacobpeterson.alpaca/alpaca-java.svg" alt="Javadocs"></a>
+    <a href="https://opensource.org/licenses/MIT" target="_blank"><img alt="GitHub" src="https://img.shields.io/github/license/petersoj/alpaca-java"></a>
 </p>
 
 # Overview
-This is a Java implementation for <a href="https://alpaca.markets/">Alpaca</a>. Alpaca  lets you build and trade with real-time market data for free. This library is community developed and if you have any questions, please ask them on the [Alpaca Slack #dev-alpaca-java channel](https://alpaca.markets/slack) or on the [Alpaca Forums](https://forum.alpaca.markets/).
+This library is a Java client implementation of the [Alpaca](https://alpaca.markets) API. Alpaca lets you trade with algorithms, connect with apps, and build services all with a commission-free trading API for stocks, crypto, and options. This library uses the [Alpaca OpenAPI Specifications](https://docs.alpaca.markets/openapi) to generate clients for the REST API with the [OkHttp](https://square.github.io/okhttp/) library, but implements the websocket and SSE streaming interface using a custom implementation with the [OkHttp](https://square.github.io/okhttp/) library. This library is community developed and if you have any questions, please ask them on [Github Discussions](https://github.com/Petersoj/alpaca-java/discussions), the [Alpaca Slack #dev-alpaca-java channel](https://alpaca.markets/slack), or on the [Alpaca Forums](https://forum.alpaca.markets/). This library strives to provide the complete Alpaca API as a Java client implementation, so open a [new issue](https://github.com/Petersoj/alpaca-java/issues) or [new pull request](https://github.com/Petersoj/alpaca-java/pulls) if you find something missing.
 
-## Table of Contents
-1. [Alpaca Java Building](#alpaca-java-building)
-2. [Alpaca Java Gradle Integration](#alpaca-java-gradle-integration)
-3. [Alpaca Java Maven Integration](#alpaca-java-maven-integration)
-4. [Configuration](#configuration)
-5. [AlpacaAPI Example](#alpacaapi-example)
-7. [PolygonAPI Example](#polygonapi-example)
+Give this repository a star ⭐ if it helped you build a trading algorithm in Java!
 
-## Alpaca Java Building
+# Gradle and Maven Integration
+If you are using Gradle as your build tool, add the following dependency to your `build.gradle` file:
 
-This project exposes that data as a Java project.  
+```
+implementation group: "net.jacobpeterson.alpaca", name: "alpaca-java", version: "10.0.1"
+```
 
-To build this project yourself, clone the project and run:
+If you are using Maven as your build tool, add the following dependency to your `pom.xml` file:
 
+```
+<dependency>
+    <groupId>net.jacobpeterson.alpaca</groupId>
+    <artifactId>alpaca-java</artifactId>
+    <version>10.0.1</version>
+</dependency>
+```
+
+Note that you don't have to use the Maven Central artifacts. Instead, you can clone this repository, build this project, and install the artifacts to your local Maven repository as shown in the [Building](#building) section.
+
+# Logger
+For logging, this library uses [SLF4j](http://www.slf4j.org/) which serves as an interface for various logging frameworks. This enables you to use whatever logging framework you would like. However, if you do not add a logging framework as a dependency in your project, the console will output a message stating that SLF4j is defaulting to a no-operation (NOP) logger implementation. To enable logging, add a logging framework of your choice as a dependency to your project such as [Logback](http://logback.qos.ch/), [Log4j 2](http://logging.apache.org/log4j/2.x/index.html), [SLF4j-simple](http://www.slf4j.org/manual.html), or [Apache Commons Logging](https://commons.apache.org/proper/commons-logging/).
+
+# `BigDecimal` vs. `Double`
+It is generally considered bad practice to represent currency values in floating-point data types such as `float` or `double` because it can lead to [rounding errors](https://ta4j.github.io/ta4j-wiki/Num.html) and [precision loss](https://stackoverflow.com/a/3730040/4352701) in calculations. However, using floating-point data types can have significant performance benefits compared to using arbitrary-precision number data types, especially in a quantitative finance and algorithmic trading environment. Because of this, `alpaca-java` uses the `Double` data type (the `double` boxed type) when using the Market Data APIs and the `BigDecimal` data type when using the Trading or Broker APIs. The thinking behind this is that exact decimal quantities are important when placing real trades with real money, but less important when performing calculations of financial indicators. The best solution would be to use the [TA4j](https://github.com/ta4j/ta4j) `Num` interface so that you can decide what data type to use based on your use case, but that is on the [TODO list](#todo) for now. By the way, using `BigDecimal` wouldn't matter if Alpaca used floating-point data types in their internal systems or in their REST APIs, but the fact that they use `String` data types in some of the REST API JSON responses and their Trading and Broker OpenAPI specifications don't use the `double` data type, this leads me to believe that using `BigDecimal` does actually matter. 
+
+# Examples
+Note that the examples below are not exhaustive. Refer to the [Javadoc](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java) for all classes and method signatures.
+
+## [`AlpacaAPI`](src/main/java/net/jacobpeterson/alpaca/AlpacaAPI.java)
+[`AlpacaAPI`](src/main/java/net/jacobpeterson/alpaca/AlpacaAPI.java) is the main class used to interface with the various Alpaca API endpoints. If you are using the Trading or Market Data APIs for a single Alpaca account or if you are using the Broker API, you will generally only need one instance of this class. However, if you are using the Trading API with OAuth to act on behalf of an Alpaca account, this class is optimized so that it can be instantiated quickly, especially when an existing `OkHttpClient` is given in the constructor. Additionally, all API endpoint instances are instantiated lazily. This class is thread-safe.
+
+The Alpaca API documentation is located [here](https://docs.alpaca.markets/) and the [`AlpacaAPI`](src/main/java/net/jacobpeterson/alpaca/AlpacaAPI.java) Javadoc is located [here](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/AlpacaAPI.html).
+
+Example usage:
+
+Use this code if you are using the Trading or Market Data APIs for a single Alpaca account:
+```java
+final String keyID = "<your_key_id>";
+final String secretKey = "<your_secret_key>";
+final TraderAPIEndpointType endpointType = TraderAPIEndpointType.PAPER; // or 'LIVE'
+final MarketDataWebsocketSourceType sourceType = MarketDataWebsocketSourceType.IEX; // or 'SIP'
+final AlpacaAPI alpacaAPI = new AlpacaAPI(keyID, secretKey, endpointType, sourceType);
+```
+
+Use this code if you are using the Trading API with OAuth to act on behalf of an Alpaca account:
+```java
+final String oAuthToken = "<an_oauth_token>";
+final TraderAPIEndpointType endpointType = TraderAPIEndpointType.PAPER; // or 'LIVE'
+final AlpacaAPI alpacaAPI = new AlpacaAPI(oAuthToken, endpointType);
+```
+
+Use this code if you are using the Broker API:
+```java
+final String brokerAPIKey = "<your_broker_api_key>";
+final String brokerAPISecret = "<your_broker_api_secret>";
+final BrokerAPIEndpointType endpointType = BrokerAPIEndpointType.SANDBOX; // or 'PRODUCTION'
+final AlpacaAPI alpacaAPI = new AlpacaAPI(brokerAPIKey, brokerAPISecret, endpointType);
+```
+
+Note that this library uses [OkHttp](https://square.github.io/okhttp/) as its HTTP client library which creates background threads to service requests via a connection pool. These threads persist even if the main thread exits, so if you want to destroy these threads when you're done using [`AlpacaAPI`](src/main/java/net/jacobpeterson/alpaca/AlpacaAPI.java), use `alpacaAPI.closeOkHttpClient();`.
+
+## [`Trader API`](src/main/java/net/jacobpeterson/alpaca/rest/trader/AlpacaTraderAPI.java)
+The [`Trader API`](src/main/java/net/jacobpeterson/alpaca/rest/trader/AlpacaTraderAPI.java) is used for placing trades, updating account details, getting open positions, and more. Refer to the [Javadoc](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/rest/trader/AlpacaTraderAPI.html) for a list of all available method signatures.
+
+Example usage:
+```java
+// Place a market order to buy one share of Apple
+final Order openingOrder = alpacaAPI.trader().orders()
+        .postOrder(new PostOrderRequest()
+                .symbol("AAPL")
+                .qty("1")
+                .side(OrderSide.BUY)
+                .type(OrderType.MARKET)
+                .timeInForce(TimeInForce.GTC));
+System.out.println("Opening Apple order: " + openingOrder);
+
+// Wait for massive gains
+Thread.sleep(10_000);
+
+// Close the Apple position
+final Order closingOrder = alpacaAPI.trader().positions()
+        .deleteOpenPosition("AAPL", null, new BigDecimal("100"));
+System.out.println("Closing Apple order: " + openingOrder);
+
+// Wait for closing trade to fill
+Thread.sleep(10_000);
+
+// Print out PnL
+final String openFillPrice = alpacaAPI.trader().orders()
+        .getOrderByOrderID(UUID.fromString(openingOrder.getId()), false)
+        .getFilledAvgPrice();
+final String closeFillPrice = alpacaAPI.trader().orders()
+        .getOrderByOrderID(UUID.fromString(closingOrder.getId()), false)
+        .getFilledAvgPrice();
+System.out.println("PnL from Apple trade: " +
+        new BigDecimal(closeFillPrice).subtract(new BigDecimal(openFillPrice)));
+```
+
+## [`Market Data API`](src/main/java/net/jacobpeterson/alpaca/rest/marketdata/AlpacaMarketDataAPI.java)
+The [`Market Data API`](src/main/java/net/jacobpeterson/alpaca/rest/marketdata/AlpacaMarketDataAPI.java) is used for getting market data for stocks, cryptocurrencies, options, and more. Refer to the [Javadoc](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/rest/marketdata/AlpacaMarketDataAPI.html) for a list of all available method signatures.
+
+Example usage:
+```java
+// Print out the latest Tesla trade
+final StockTrade latestTSLATrade = alpacaAPI.marketData().stock()
+        .stockLatestTradeSingle("TSLA", StockFeed.IEX, null).getTrade();
+System.out.printf("Latest TSLA trade: price=%s, size=%s\n",
+        latestTSLATrade.getP(), latestTSLATrade.getS());
+
+// Print out the highest Bitcoin ask price on the order book
+final CryptoOrderbook latestBitcoinOrderBooks = alpacaAPI.marketData().crypto()
+        .cryptoLatestOrderbooks(CryptoLoc.US, "BTC/USD").getOrderbooks().get("BTC/USD");
+final Double highestBitcoinAskPrice = latestBitcoinOrderBooks.getA().stream()
+        .map(CryptoOrderbookEntry::getP)
+        .max(Double::compare)
+        .orElse(null);
+System.out.println("Bitcoin highest ask price: " + highestBitcoinAskPrice);
+
+// Print out the latest Microsoft option trade
+final String latestMSFTOptionTrade = alpacaAPI.marketData().option()
+        .optionChain("MSFT").getSnapshots().entrySet().stream()
+        .filter(entry -> entry.getValue().getLatestTrade() != null)
+        .map(entry -> Map.entry(entry.getKey(), entry.getValue().getLatestTrade()))
+        .max(Comparator.comparing(entry -> entry.getValue().getT()))
+        .map(entry -> String.format("ticker=%s, time=%s, price=%s",
+                entry.getKey(), entry.getValue().getT(), entry.getValue().getP()))
+        .orElse(null);
+System.out.println("Latest Microsoft option trade: " + latestMSFTOptionTrade);
+```
+
+## [`Broker API`](src/main/java/net/jacobpeterson/alpaca/rest/broker/AlpacaBrokerAPI.java)
+The [`Broker API`](src/main/java/net/jacobpeterson/alpaca/rest/broker/AlpacaBrokerAPI.java) is used for creating new Alpaca accounts for your end users, funding their accounts, placing trades, and more. Refer to the [Javadoc](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/rest/broker/AlpacaBrokerAPI.html) for a list of all available method signatures.
+
+Example usage:
+```java
+// Listen to the trade events (SSE) and print them out
+final SSERequest sseRequest = alpacaAPI.broker().events()
+        .subscribeToTradeV2(null, null, null, null, new SSEListenerAdapter<>());
+
+// Wait for SSE channel to be ready
+Thread.sleep(2000);
+
+// Buy one share of GME for an account
+alpacaAPI.broker().trading()
+        .createOrderForAccount(UUID.fromString("<some_account_uuid>"),
+                new CreateOrderRequest()
+                        .symbol("GME")
+                        .qty(BigDecimal.ONE)
+                        .side(OrderSide.SELL)
+                        .timeInForce(TimeInForce.GTC)
+                        .type(OrderType.MARKET));
+
+// Wait to be filled
+Thread.sleep(2000);
+
+// Close the SSE stream and the OkHttpClient to exit cleanly
+sseRequest.close();
+alpacaAPI.closeOkHttpClient();
+```
+
+## [`Updates Stream`](src/main/java/net/jacobpeterson/alpaca/websocket/updates/UpdatesWebsocket.java)
+The [`Updates Stream`](src/main/java/net/jacobpeterson/alpaca/websocket/updates/UpdatesWebsocket.java) is used for listening to trade updates in realtime. Refer to the [Javadoc](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/websocket/updates/UpdatesWebsocketInterface.html) for a list of all available method signatures.
+
+Example usage:
+```java
+// Connect to the 'updates' stream and wait until it's authorized
+alpacaAPI.updatesStream().connect();
+if (!alpacaAPI.updatesStream().waitForAuthorization(5, TimeUnit.SECONDS)) {
+    throw new RuntimeException();
+}
+
+// Print out trade updates
+alpacaAPI.updatesStream().setListener(System.out::println);
+alpacaAPI.updatesStream().subscribeToTradeUpdates(true);
+
+// Place a trade
+alpacaAPI.trader().orders().postOrder(new PostOrderRequest()
+        .symbol("AAPL")
+        .qty("1")
+        .side(OrderSide.BUY)
+        .type(OrderType.MARKET)
+        .timeInForce(TimeInForce.GTC));
+
+// Wait a few seconds
+Thread.sleep(5000);
+
+// Close the trade
+alpacaAPI.trader().positions().deleteAllOpenPositions(true);
+
+// Wait a few seconds
+Thread.sleep(5000);
+
+// Disconnect the 'updates' stream and exit cleanly
+alpacaAPI.updatesStream().disconnect();
+alpacaAPI.closeOkHttpClient();
+```
+
+## [`Market Data Stream`](src/main/java/net/jacobpeterson/alpaca/websocket/marketdata/MarketDataWebsocket.java)
+The [`Market Data Stream`](src/main/java/net/jacobpeterson/alpaca/websocket/marketdata/MarketDataWebsocket.java) is used for listening to stock market data, crypto market data, and news data in realtime. Refer to the Javadocs ([stock](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/websocket/marketdata/streams/stock/StockMarketDataWebsocketInterface.html), [crypto](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/websocket/marketdata/streams/crypto/CryptoMarketDataWebsocketInterface.html), [news](https://javadoc.io/doc/net.jacobpeterson.alpaca/alpaca-java/latest/net/jacobpeterson/alpaca/websocket/marketdata/streams/news/NewsMarketDataWebsocketInterface.html)) for a list of all available method signatures.
+
+Example usage:
+```java
+// Connect to the 'stock market data' stream and wait until it's authorized
+alpacaAPI.stockMarketDataStream().connect();
+if (!alpacaAPI.stockMarketDataStream().waitForAuthorization(5, TimeUnit.SECONDS)) {
+    throw new RuntimeException();
+}
+
+// Print out trade messages
+alpacaAPI.stockMarketDataStream().setListener(new StockMarketDataListenerAdapter() {
+    @Override
+    public void onTrade(StockTradeMessage trade) {
+        System.out.println("Received trade: " + trade);
+    }
+});
+
+// Subscribe to AAPL trades
+alpacaAPI.stockMarketDataStream().setTradeSubscriptions(Set.of("AAPL"));
+System.out.println("Subscribed to Apple trades.");
+
+// Wait a few seconds
+Thread.sleep(5000);
+
+// Unsubscribe from AAPL and subscribe to TSLA and MSFT
+alpacaAPI.stockMarketDataStream().setTradeSubscriptions(Set.of("TSLA", "MSFT"));
+System.out.println("Subscribed to Tesla and Microsoft trades.");
+
+// Wait a few seconds
+Thread.sleep(5000);
+
+// Disconnect the 'stock market data' stream and exit cleanly
+alpacaAPI.stockMarketDataStream().disconnect();
+alpacaAPI.closeOkHttpClient();
+```
+
+# Building
+To build this project yourself, clone this repository and run:
 ```
 ./gradlew build
 ```
 
-## Alpaca Java Gradle Integration
-
-Add the following dependency to your build.gradle file:
-
+To install the built artifacts to your local Maven repository on your machine (the `~/.m2/` directory), run:
 ```
-dependencies {
-	compile "io.github.mainstringargs:alpaca-java:5.0.12"
-}
+./gradlew publishToMavenLocal
 ```
 
-## Alpaca Java Maven Integration
+# TODO
+- Implement better reconnect logic for Websockets and SSE streaming.
+- Implement Unit Testing for REST API and Websocket streaming (both live and mocked).
+- Use [TA4j](https://github.com/ta4j/ta4j) `Num` interface instead of `Double` or `BigDecimal` for number data types so that users can use either `Double` or `BigDecimal` for performance or precision in price data.
 
-Add the following dependency to your pom.xml file:
+# Contributing
+Contributions are welcome!
 
-```
-<dependency>
-    <groupId>io.github.mainstringargs</groupId>
-    <artifactId>alpaca-java</artifactId>
-    <version>5.0.12</version>
-    <scope>compile</scope>
-</dependency>
-```
-## Configuration
-
-If you plan on using the alpaca.properties, set the following properties in an alpaca.properties file on the classpath:
-```
-api_version = <v1 or v2>
-key_id = <YOUR KEY>
-secret = <YOUR SECRET>
-base_api_url = https://paper-api.alpaca.markets
-base_data_url = https://data.alpaca.markets
-user_agent=a_user_agent
-```
-The default values for `alpaca.properties` can be found [here](https://github.com/mainstringargs/alpaca-java/tree/master/src/main/resources).
-
-Similarly, set the following properties in a polygon.properties file on the classpath for using the PolygonAPI:
-```
-#key_id will default to what is set in alpaca.properties
-key_id = <INSERT HERE>
-base_api_url = https://api.polygon.io
-web_socket_server_url = wss://alpaca.socket.polygon.io/stocks
-user_agent=a_user_agent
-```
-The default values for `polygon.properties` can be found [here](https://github.com/mainstringargs/alpaca-java/tree/master/src/main/resources).
-
-## AlpacaAPI Example
-
-This example uses the `AlpacaAPI` class to subscribe to the Account and Trade Updates stream, print out the account information, submit a limit order, create a watchlist, and print out bars data. Click [here](https://docs.alpaca.markets/api-documentation/api-v2/) for the general Alpaca API documentation and click [here](https://javadoc.io/doc/io.github.mainstringargs/alpaca-java/latest/io/github/mainstringargs/alpaca/AlpacaAPI.html) for the `AlpacaAPI` javadoc.
-
-```java
-// This logs into Alpaca using the alpaca.properties file on the classpath.
-AlpacaAPI alpacaAPI = new AlpacaAPI();
-
-// Register explicitly for ACCOUNT_UPDATES and ORDER_UPDATES Messages via stream listener
-alpacaAPI.addAlpacaStreamListener(new AlpacaStreamListenerAdapter(
-        AlpacaStreamMessageType.ACCOUNT_UPDATES,
-        AlpacaStreamMessageType.TRADE_UPDATES) {
-    @Override
-    public void onStreamUpdate(AlpacaStreamMessageType streamMessageType, AlpacaStreamMessage streamMessage) {
-        switch (streamMessageType) {
-            case ACCOUNT_UPDATES:
-                AccountUpdateMessage accountUpdateMessage = (AccountUpdateMessage) streamMessage;
-                System.out.println("\nReceived Account Update: \n\t" +
-                        accountUpdateMessage.toString().replace(",", ",\n\t"));
-                break;
-            case TRADE_UPDATES:
-                TradeUpdateMessage tradeUpdateMessage = (TradeUpdateMessage) streamMessage;
-                System.out.println("\nReceived Order Update: \n\t" +
-                        tradeUpdateMessage.toString().replace(",", ",\n\t"));
-                break;
-        }
-    }
-});
-
-// Get Account Information
-try {
-    Account alpacaAccount = alpacaAPI.getAccount();
-
-    System.out.println("\n\nAccount Information:");
-    System.out.println("\t" + alpacaAccount.toString().replace(",", ",\n\t"));
-} catch (AlpacaAPIRequestException e) {
-    e.printStackTrace();
-}
-
-// Request an Order
-try {
-    Order aaplLimitOrder = alpacaAPI.requestNewLimitOrder("AAPL", 1, OrderSide.BUY, OrderTimeInForce.DAY,
-            201.30, true, null);
-
-    System.out.println("\n\nNew AAPL Order:");
-    System.out.println("\t" + aaplLimitOrder.toString().replace(",", ",\n\t"));
-} catch (AlpacaAPIRequestException e) {
-    e.printStackTrace();
-}
-
-// Create watchlist
-try {
-    Watchlist dayTradeWatchlist = alpacaAPI.createWatchlist("Day Trade", "AAPL");
-
-    System.out.println("\n\nDay Trade Watchlist:");
-    System.out.println("\t" + dayTradeWatchlist.toString().replace(",", ",\n\t"));
-} catch (AlpacaAPIRequestException e) {
-    e.printStackTrace();
-}
-
-// Get bars
-try {
-    ZonedDateTime start = ZonedDateTime.of(2019, 11, 18, 0, 0, 0, 0, ZoneId.of("America/New_York"));
-    ZonedDateTime end = ZonedDateTime.of(2019, 11, 22, 23, 59, 0, 0, ZoneId.of("America/New_York"));
-
-    Map<String, ArrayList<Bar>> bars = alpacaAPI.getBars(BarsTimeFrame.ONE_DAY, "AAPL", null, start, end,
-            null, null);
-
-    System.out.println("\n\nBars response:");
-    for (Bar bar : bars.get("AAPL")) {
-        System.out.println("\t==========");
-        System.out.println("\tUnix Time " + ZonedDateTime.ofInstant(Instant.ofEpochSecond(bar.getT()),
-                ZoneOffset.UTC));
-        System.out.println("\tOpen: $" + bar.getO());
-        System.out.println("\tHigh: $" + bar.getH());
-        System.out.println("\tLow: $" + bar.getL());
-        System.out.println("\tClose: $" + bar.getC());
-        System.out.println("\tVolume: " + bar.getV());
-    }
-} catch (AlpacaAPIRequestException e) {
-    e.printStackTrace();
-}
-
-// Keep the Alpaca websocket stream open for 5 seconds
-try {
-    Thread.sleep(5000);
-} catch (InterruptedException e) {
-    e.printStackTrace();
-}
-```
-
-This code will output the following:
-
-```
-Account Information:
-        io.github.mainstringargs.domain.alpaca.account.Account@626abbd0[id=<account id>,
-        accountNumber=<account number>,
-        status=ACTIVE,
-        currency=USD,
-        cash=6982.96,
-        portfolioValue=99717.04,
-        patternDayTrader=false,
-        tradeSuspendedByUser=false,
-        tradingBlocked=false,
-        transfersBlocked=false,
-        accountBlocked=false,
-        createdAt=2019-08-11T22:19:17.959522Z,
-        shortingEnabled=true,
-        longMarketValue=106700,
-        shortMarketValue=0,
-        equity=99717.04,
-        lastEquity=97753.04,
-        multiplier=4,
-        buyingPower=265328.96,
-        initialMargin=53350,
-        maintenanceMargin=32010,
-        sma=0,
-        daytradeCount=0,
-        lastMaintenanceMargin=31420.8,
-        daytradingBuyingPower=265328.96,
-        regtBuyingPower=92734.08]
-
-New AAPL Order:
-        io.github.mainstringargs.domain.alpaca.order.Order@37313c65[id=<order id>,
-        clientOrderId=929e412f-32b6-4ddf-9729-d77a59c19ec8,
-        createdAt=2019-11-26T03:41:10.475959154Z,
-        updatedAt=2019-11-26T03:41:10.481465924Z,
-        submittedAt=2019-11-26T03:41:10.464752859Z,
-        filledAt=<null>,
-        expiredAt=<null>,
-        canceledAt=<null>,
-        failedAt=<null>,
-        assetId=b0b6dd9d-8b9b-48a9-ba46-b9d54906e415,
-        symbol=AAPL,
-        assetClass=us_equity,
-        qty=1,
-        filledQty=0,
-        type=limit,
-        side=buy,
-        timeInForce=day,
-        limitPrice=201.3,
-        stopPrice=<null>,
-        filledAvgPrice=<null>,
-        status=new,
-        extendedHours=true]
-
-Received Order Update: 
-	 OrderUpdateMessage [event=NEW,
-            price=null,
-            timestamp=null,
-            order=io.github.mainstringargs.alpaca.domain.Order@5c728415[id=<order id>,
-            clientOrderId=e23ca503-ebec-4754-b65a-ee42806fc67d,
-            createdAt=2019-11-23T14:41:05.503352Z,
-            updatedAt=2019-11-23T14:41:05.599835871Z,
-            submittedAt=2019-11-23T14:41:05.445148Z,
-            filledAt=<null>,
-            expiredAt=<null>,
-            canceledAt=<null>,
-            failedAt=<null>,
-            assetId=b0b6dd9d-8b9b-48a9-ba46-b9d54906e415,
-            symbol=AAPL,
-            exchange=<null>,
-            assetClass=us_equity,
-            qty=1,
-            filledQty=0,
-            type=limit,
-            side=buy,
-            timeInForce=day,
-            limitPrice=100,
-            stopPrice=<null>,
-            filledAvgPrice=<null>,
-            status=new]]
-
-
-Day Trade Watchlist:
-        io.github.mainstringargs.domain.alpaca.watchlist.Watchlist@34bde49d[id=7c414350-79d8-4527-8892-f1667faa712a,
-        createdAt=2019-11-26T03:20:31.953679Z,
-        updatedAt=2019-11-26T03:20:31.953679Z,
-        name=Day Trade,
-        accountId=<account id>,
-        assets=[io.github.mainstringargs.domain.alpaca.asset.Asset@1b1cfb87[id=b0b6dd9d-8b9b-48a9-ba46-b9d54906e415,
-        _class=us_equity,
-        exchange=NASDAQ,
-        symbol=AAPL,
-        status=active,
-        tradable=true,
-        marginable=true,
-        shortable=true,
-        easyToBorrow=true]]]
-
-Bars response:
-        ==========
-        Unix Time 2019-11-18T05:00Z
-        Open: $265.8
-        High: $267.43
-        Low: $264.23
-        Close: $267.12
-        Volume: 1.8045658E7
-        ==========
-        Unix Time 2019-11-19T05:00Z
-        Open: $267.9
-        High: $268.0
-        Low: $265.3926
-        Close: $266.29
-        Volume: 1.4685205E7
-        ==========
-        Unix Time 2019-11-20T05:00Z
-        Open: $265.54
-        High: $266.083
-        Low: $260.4
-        Close: $263.22
-        Volume: 2.2181038E7
-        ==========
-        Unix Time 2019-11-21T05:00Z
-        Open: $263.71
-        High: $264.005
-        Low: $261.18
-        Close: $262.01
-        Volume: 2.5411879E7
-        ==========
-        Unix Time 2019-11-22T05:00Z
-        Open: $262.59
-        High: $263.18
-        Low: $260.84
-        Close: $261.84
-        Volume: 1.4021695E7
-```
-
-# PolygonAPI Example
-
-This example uses the `PolygonAPI` class to subscribe to the Polygon websocket stream, get stocks splits, and get aggregates. Click [here](https://polygon.io/docs/) for the general Polygon API documentation and click [here](https://javadoc.io/doc/io.github.mainstringargs/alpaca-java/latest/io/github/mainstringargs/polygon/PolygonAPI.html) for the `PolygonAPI` javadoc.
-
-```java
-// This will use the key_id in the alpaca.properties file by default
-PolygonAPI polygonAPI = new PolygonAPI();
-
-String aaplTicker = "AAPL";
-
-// Add a Polygon stream listener to listen to "T.AAPL", "Q.AAPL", "A.AAPL", "AM.AAPL", and status messages
-polygonAPI.addPolygonStreamListener(new PolygonStreamListenerAdapter(aaplTicker,
-        PolygonStreamMessageType.values()) {
-    @Override
-    public void onStreamUpdate(PolygonStreamMessageType streamMessageType, PolygonStreamMessage streamMessage) {
-        System.out.println("===> streamUpdate " + streamMessageType + " " + streamMessage);
-    }
-});
-
-// Sleep the current thread for 2 seconds so we can see some trade/quote/aggregates updates on the stream!
-try {
-    Thread.sleep(2000);
-} catch (InterruptedException e) {
-    e.printStackTrace();
-}
-
-try {
-    StockSplitsResponse stockSplitsResponse = polygonAPI.getStockSplits(aaplTicker);
-
-    System.out.println(aaplTicker + " Stock Split Response:");
-    System.out.println("\tStatus: " + stockSplitsResponse.getStatus());
-    System.out.println("\tCount: " + stockSplitsResponse.getCount());
-    for (StockSplit stockSplit : stockSplitsResponse.getResults()) {
-        System.out.println("\t" + stockSplit.toString().replace(",", ",\n\t"));
-    }
-} catch (PolygonAPIRequestException e) {
-    e.printStackTrace();
-}
-
-try {
-    AggregatesResponse aggregatesResponse = polygonAPI.getAggregates(aaplTicker, 1, Timespan.DAY,
-            LocalDate.of(2019, 11, 18), LocalDate.of(2019, 11, 25), false);
-
-    System.out.println("Aggregate Response:");
-    System.out.println("\tStatus: " + aggregatesResponse.getStatus());
-    System.out.println("\tCount: " + aggregatesResponse.getResultsCount());
-    for (Aggregate aggregate : aggregatesResponse.getResults()) {
-        System.out.println("\t" + aggregate.toString().replace(",", ",\n\t"));
-    }
-} catch (PolygonAPIRequestException e) {
-    e.printStackTrace();
-}
-```
-This code will output the following:
-
-```
-[INFO ] 2019-11-25 21:33:20.456 [main] PolygonWebsocketClient - Connected.
-[DEBUG] 2019-11-25 21:33:20.485 [main] PolygonWebsocketClientEndpoint - sendMessage {"action":"auth","params":"<my key ID>"}
-[INFO ] 2019-11-25 21:33:20.489 [main] PolygonWebsocketClient - Subscribing to A.AAPL
-[INFO ] 2019-11-25 21:33:20.489 [main] PolygonWebsocketClient - Subscribing to T.AAPL
-[INFO ] 2019-11-25 21:33:20.489 [main] PolygonWebsocketClient - Subscribing to AM.AAPL
-[INFO ] 2019-11-25 21:33:20.489 [main] PolygonWebsocketClient - Subscribing to Q.AAPL
-[DEBUG] 2019-11-25 21:33:20.491 [main] PolygonWebsocketClientEndpoint - sendMessage {"action":"subscribe","params":"A.AAPL,T.AAPL,AM.AAPL,Q.AAPL"}
-[INFO ] 2019-11-25 21:33:20.492 [main] PolygonWebsocketClient - Subscriptions updated to {AAPL=[AGGREGATE_PER_SECOND, TRADES, AGGREGATE_PER_MINUTE, QUOTES]}
-[INFO] 2019-11-25 21:33:20.508 [PolygonWebsocketThread] PolygonWebsocketClient - Channel status: io.github.mainstringargs.domain.polygon.websocket.ChannelStatus@78428bcb[ev=status,status=connected,message=Connected Successfully]
-[INFO] 2019-11-25 21:33:20.667 [PolygonWebsocketThread] PolygonWebsocketClient - Channel status: io.github.mainstringargs.domain.polygon.websocket.ChannelStatus@629dc521[ev=status,status=auth_success,message=authenticated]
-[INFO] 2019-11-25 21:33:20.735 [PolygonWebsocketThread] PolygonWebsocketClient - Channel status: io.github.mainstringargs.domain.polygon.websocket.ChannelStatus@7f4d9c50[ev=status,status=success,message=subscribed to: A.AAPL]
-[INFO] 2019-11-25 21:33:20.737 [PolygonWebsocketThread] PolygonWebsocketClient - Channel status: io.github.mainstringargs.domain.polygon.websocket.ChannelStatus@2aa9728c[ev=status,status=success,message=subscribed to: T.AAPL]
-[INFO] 2019-11-25 21:33:20.738 [PolygonWebsocketThread] PolygonWebsocketClient - Channel status: io.github.mainstringargs.domain.polygon.websocket.ChannelStatus@4659b8c1[ev=status,status=success,message=subscribed to: AM.AAPL]
-[INFO] 2019-11-25 21:33:20.738 [PolygonWebsocketThread] PolygonWebsocketClient - Channel status: io.github.mainstringargs.domain.polygon.websocket.ChannelStatus@4a61d9e6[ev=status,status=success,message=subscribed to: Q.AAPL]
-===> streamUpdate QUOTES QuotesMessage [ticker=AAPL, channelType=QUOTES, stockQuote=io.github.mainstringargs.polygon.domain.StockQuote@4d5b710e[ev=<null>,sym=AAPL,bx=12,bp=124.86,bs=6,ax=12,ap=124.87,as=5,c=1,t=1559143439610], timestamp=2019-05-29T10:23:59.610]
-===> streamUpdate QUOTES QuotesMessage [ticker=AAPL, channelType=QUOTES, stockQuote=io.github.mainstringargs.polygon.domain.StockQuote@16b79976[ev=<null>,sym=AAPL,bx=12,bp=124.86,bs=4,ax=12,ap=124.87,as=5,c=1,t=1559143439712], timestamp=2019-05-29T10:23:59.712]
-===> streamUpdate TRADES TradesMessage [ticker=AAPL, channelType=TRADES, stockTrade=io.github.mainstringargs.polygon.domain.StockTrade@32b4aa49[ev=<null>,sym=AAPL,x=4,p=124.86,s=100,c=[],t=1559143439772], timestamp=2019-05-29T10:23:59.772]
-===> streamUpdate AGGREGATE_PER_SECOND AggregateMessage [ticker=AAPL, channelType=AGGREGATE_PER_SECOND, stockAggregate=io.github.mainstringargs.polygon.domain.StockAggregate@5ace47f7[ev=<null>,sym=AAPL,v=1131,av=6602041,op=125.5,vw=124.9778,o=124.8665,c=124.86,h=124.8665,l=124.86,a=124.8636,s=1559143439000,e=1559143440000], start=2019-05-29T10:23:59, end=2019-05-29T10:24]
-
-AAPL Stock Split Response:
-        Status: OK
-        Count: 3
-        io.github.mainstringargs.domain.polygon.stocksplits.StockSplit@6b09fb41[ticker=AAPL,
-        exDate=2014-06-09,
-        paymentDate=2014-06-09,
-        recordDate=<null>,
-        declaredDate=<null>,
-        ratio=0.14285714285714285,
-        tofactor=<null>,
-        forfactor=<null>]
-        ...
-
-Aggregate Response:
-        Status: OK
-        Count: 5.0
-        io.github.mainstringargs.domain.polygon.aggregates.Aggregate@6cd24612[ticker=<null>,
-        v=23984783,
-        o=265.8,
-        c=267.1,
-        h=267.43,
-        l=264.23,
-        t=1574053200000,
-        n=1]
-        io.github.mainstringargs.domain.polygon.aggregates.Aggregate@5dafbe45[ticker=<null>,
-        v=21208039,
-        o=267.9,
-        c=266.29,
-        h=268.0,
-        l=265.3926,
-        t=1574139600000,
-        n=1]
-        ...
-```
+Do the following before starting your pull request:
+1. Create a new branch in your forked repository for your feature or bug fix instead of committing directly to the `master` branch in your fork.
+2. Use the `dev` branch as the base branch in your pull request.
